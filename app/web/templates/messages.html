@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}پیام‌ها | مدیریت بات بله{% endblock %}
+{% block content %}
+<h1>پیام‌های اخیر</h1>
+<div class="panel">
+  <table class="table">
+    <tr><th>جهت</th><th>کاربر</th><th>متن</th></tr>
+    {% for m in messages %}
+    <tr>
+      <td>{{ '📥 دریافتی' if m.direction == 'in' else '📤 ارسالی' }}</td>
+      <td>{{ m.first_name or m.chat_id }}</td>
+      <td>{{ m.text }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3">پیامی ثبت نشده است.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

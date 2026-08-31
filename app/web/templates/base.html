@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}مدیریت بات بله{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">🤖 بات بله</div>
+    <nav>
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/' }}">🏠 داشبورد</a>
+      <a href="{{ url_for('users') }}" class="{{ 'active' if request.path == '/users' }}">👥 کاربران</a>
+      <a href="{{ url_for('messages') }}" class="{{ 'active' if request.path == '/messages' }}">💬 پیام‌ها</a>
+      <a href="{{ url_for('settings') }}" class="{{ 'active' if request.path == '/settings' }}">⚙️ تنظیمات</a>
+      <a href="{{ url_for('logs') }}" class="{{ 'active' if request.path == '/logs' }}">📜 لاگ‌ها</a>
+      <a href="{{ url_for('update_page') }}" class="{{ 'active' if request.path == '/update' }}">⬆️ بروزرسانی</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="ver">نسخه {{ version }}</div>
+      <a href="{{ url_for('logout') }}">🚪 خروج</a>
+    </div>
+  </aside>
+  <main class="content">
+    {% with msgs = get_flashed_messages() %}
+      {% for m in msgs %}<div class="flash">{{ m }}</div>{% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

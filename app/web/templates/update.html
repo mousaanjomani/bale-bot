@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}بروزرسانی | مدیریت بات بله{% endblock %}
+{% block content %}
+<h1>بروزرسانی نرم‌افزار</h1>
+<div class="panel">
+  <p>نسخه فعلی: <b>{{ version }}</b></p>
+  <div class="actions">
+    <button id="btn-check" class="btn">🔍 بررسی نسخه جدید</button>
+    <button id="btn-apply" class="btn ok" style="display:none">⬆️ نصب بروزرسانی</button>
+  </div>
+  <div id="result" class="update-result"></div>
+  <pre id="progress" class="logbox" dir="rtl" style="display:none"></pre>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const result = document.getElementById('result');
+const btnApply = document.getElementById('btn-apply');
+const progress = document.getElementById('progress');
+
+document.getElementById('btn-check').onclick = async () => {
+  result.textContent = 'در حال بررسی ...';
+  const r = await fetch('/api/update/check');
+  const d = await r.json();
+  if (d.error) { result.textContent = d.error; return; }
+  if (d.has_update) {
+    result.innerHTML = 'نسخه جدید موجود است: <b>' + d.latest + '</b><br><pre class="notes">' +
+      (d.notes || '') + '</pre>';
+    btnApply.style.display = 'inline-block';
+  } else {
+    result.textContent = 'شما آخرین نسخه (' + d.current + ') را دارید. ✅';
+  }
+};
+
+btnApply.onclick = async () => {
+  if (!confirm('بروزرسانی نصب شود؟ سرویس چند لحظه راه‌اندازی مجدد می‌شود.')) return;
+  btnApply.disabled = true;
+  progress.style.display = 'block';
+  await fetch('/api/update/apply', {method: 'POST'});
+  const timer = setInterval(async () => {
+    try {
+      const r = await fetch('/api/update/progress');
+      const d = await r.json();
+      progress.textContent = d.log.join('\n');
+      if (!d.busy && d.log.length) {
+        clearInterval(timer);
+        progress.textContent += '\nصفحه تا ۱۰ ثانیه دیگر تازه‌سازی می‌شود ...';
+        setTimeout(() => location.reload(), 10000);
+      }
+    } catch (e) {
+      progress.textContent += '\nدر حال راه‌اندازی مجدد سرویس ...';
+    }
+  }, 1500);
+};
+</script>
+{% endblock %}

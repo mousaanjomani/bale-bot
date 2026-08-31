@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}تنظیمات | مدیریت بات بله{% endblock %}
+{% block content %}
+<h1>تنظیمات</h1>
+<form method="post" class="panel form">
+  <h2>بات</h2>
+  <label>توکن بات بله</label>
+  <input name="bot_token" value="{{ cfg.bot_token }}" dir="ltr" placeholder="123456789:xxxxxxxx">
+  <div class="hint">توکن را از بات‌ساز بله (@botfather) دریافت کنید.</div>
+
+  <label>متن خوش‌آمدگویی (/start)</label>
+  <textarea name="welcome_text" rows="3">{{ cfg.welcome_text }}</textarea>
+
+  <h2>مدیر</h2>
+  <label>نام کاربری مدیر</label>
+  <input name="admin_user" value="{{ cfg.admin_user }}" dir="ltr">
+  <label>رمز عبور جدید (خالی = بدون تغییر)</label>
+  <input name="admin_password" type="password" dir="ltr" autocomplete="new-password">
+
+  <h2>وب</h2>
+  <label>پورت داشبورد (پس از راه‌اندازی مجدد اعمال می‌شود)</label>
+  <input name="web_port" value="{{ cfg.web_port }}" dir="ltr">
+
+  <button type="submit" class="btn ok">💾 ذخیره تنظیمات</button>
+</form>
+{% endblock %}

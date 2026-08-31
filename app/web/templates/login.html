@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ورود | مدیریت بات بله</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-body">
+  <form class="login-card" method="post">
+    <div class="login-logo">🤖</div>
+    <h1>مدیریت بات بله</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <label>نام کاربری</label>
+    <input name="username" autofocus autocomplete="username">
+    <label>رمز عبور</label>
+    <input name="password" type="password" autocomplete="current-password">
+    <button type="submit">ورود</button>
+  </form>
+</body>
+</html>

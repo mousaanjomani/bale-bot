@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}لاگ‌ها | مدیریت بات بله{% endblock %}
+{% block content %}
+<h1>لاگ سیستم</h1>
+<div class="panel">
+  <pre class="logbox" dir="ltr">{% for l in lines %}{{ l }}{% else %}لاگی ثبت نشده است.{% endfor %}</pre>
+</div>
+{% endblock %}

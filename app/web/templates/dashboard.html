@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}داشبورد | مدیریت بات بله{% endblock %}
+{% block content %}
+<h1>داشبورد</h1>
+
+<div class="cards">
+  <div class="card">
+    <div class="card-title">وضعیت بات</div>
+    <div class="card-value">
+      {% if status == 'running' %}<span class="badge ok">فعال ✅</span>
+      {% elif status == 'disabled' %}<span class="badge warn">غیرفعال ⏸️</span>
+      {% elif status == 'no-token' %}<span class="badge warn">توکن تنظیم نشده ⚠️</span>
+      {% elif status == 'error' %}<span class="badge err">خطا در اتصال ❌</span>
+      {% else %}<span class="badge">{{ status }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">کاربران</div>
+    <div class="card-value">{{ user_count }}</div>
+  </div>
+  <div class="card">
+    <div class="card-title">پیام‌ها</div>
+    <div class="card-value">{{ msg_count }}</div>
+  </div>
+  <div class="card">
+    <div class="card-title">مدت اجرا</div>
+    <div class="card-value">{{ (uptime // 3600) }}:{{ '%02d' % ((uptime % 3600) // 60) }}</div>
+  </div>
+</div>
+
+{% if bot_info %}
+<div class="panel">
+  <h2>مشخصات بات</h2>
+  <table class="table">
+    <tr><th>نام</th><td>{{ bot_info.first_name }}</td></tr>
+    <tr><th>نام کاربری</th><td>@{{ bot_info.username }}</td></tr>
+    <tr><th>شناسه</th><td>{{ bot_info.id }}</td></tr>
+  </table>
+</div>
+{% elif not token_set %}
+<div class="panel">
+  <p>برای شروع، توکن بات را در بخش <a href="{{ url_for('settings') }}">تنظیمات</a> وارد کنید.</p>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h2>عملیات</h2>
+  <div class="actions">
+    <button id="btn-toggle" class="btn {{ 'warn' if bot_enabled else 'ok' }}">
+      {{ '⏸️ توقف بات' if bot_enabled else '▶️ شروع بات' }}
+    </button>
+    <button id="btn-restart" class="btn">🔄 راه‌اندازی مجدد سرویس</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('btn-toggle').onclick = async () => {
+  await fetch('/api/bot/toggle', {method: 'POST'});
+  location.reload();
+};
+document.getElementById('btn-restart').onclick = async () => {
+  if (!confirm('سرویس مجدداً راه‌اندازی شود؟')) return;
+  await fetch('/api/restart', {method: 'POST'});
+  setTimeout(() => location.reload(), 5000);
+};
+</script>
+{% endblock %}
