@@ -1,8 +1,8 @@
-﻿# =====================================================================
+# =====================================================================
 #  Bale Bot - Windows installer
-#  Run on the customer server (PowerShell as Administrator):
-#    irm https://raw.githubusercontent.com/mousaanjomani/bale-bot/main/installer/install.ps1 -OutFile $env:TEMP\balebot-install.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\balebot-install.ps1
-#  or download this file and run:  powershell -ExecutionPolicy Bypass -File install.ps1
+#  Easiest way: give the customer installer/install.bat (double-click).
+#  Manual run (PowerShell as Administrator):
+#    irm https://raw.githubusercontent.com/mousaanjomani/bale-bot/main/installer/install.ps1 | iex
 # =====================================================================
 $ErrorActionPreference = "Stop"
 
@@ -11,30 +11,30 @@ $Repo     = "mousaanjomani/bale-bot"
 $TaskName = "BaleBot"
 
 Write-Host ""
-Write-Host "=== نصب بات بله ===" -ForegroundColor Green
-
-# ------------- install path (chosen by the customer) -------------
-$DefaultDir = "C:\BaleBot"
-$InstallDir = Read-Host "مسیر نصب را وارد کنید (Enter = $DefaultDir)"
-if ([string]::IsNullOrWhiteSpace($InstallDir)) { $InstallDir = $DefaultDir }
-$InstallDir = $InstallDir.Trim('"').TrimEnd('\')
-try {
-    New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-} catch {
-    Write-Host "مسیر «$InstallDir» قابل ساخت نیست: $_" -ForegroundColor Red
-    exit 1
-}
-$AppDir  = Join-Path $InstallDir "app"
-$DataDir = Join-Path $InstallDir "data"
-Write-Host "Install dir: $InstallDir" -ForegroundColor Cyan
+Write-Host "=== Bale Bot Installer ===" -ForegroundColor Green
 
 # ------------- admin check -------------
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
            ).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "این اسکریپت باید با دسترسی Administrator اجرا شود." -ForegroundColor Red
+    Write-Host "This installer must be run as Administrator." -ForegroundColor Red
     exit 1
 }
+
+# ------------- install path (chosen by the customer) -------------
+$DefaultDir = "C:\BaleBot"
+$InstallDir = Read-Host "Install path (press Enter for $DefaultDir)"
+if ([string]::IsNullOrWhiteSpace($InstallDir)) { $InstallDir = $DefaultDir }
+$InstallDir = $InstallDir.Trim('"').TrimEnd('\')
+try {
+    New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+} catch {
+    Write-Host "Cannot create directory '$InstallDir': $_" -ForegroundColor Red
+    exit 1
+}
+$AppDir  = Join-Path $InstallDir "app"
+$DataDir = Join-Path $InstallDir "data"
+Write-Host "Install dir: $InstallDir" -ForegroundColor Cyan
 
 # ------------- find or install Python -------------
 function Find-Python {
@@ -49,7 +49,7 @@ function Find-Python {
 
 $py = Find-Python
 if (-not $py) {
-    Write-Host "Python یافت نشد؛ در حال نصب Python 3.12 ..." -ForegroundColor Yellow
+    Write-Host "Python not found; installing Python 3.12 ..." -ForegroundColor Yellow
     $pyUrl = "https://www.python.org/ftp/python/3.12.8/python-3.12.8-amd64.exe"
     $pyExe = Join-Path $env:TEMP "python-installer.exe"
     Invoke-WebRequest -Uri $pyUrl -OutFile $pyExe -UseBasicParsing
@@ -57,14 +57,14 @@ if (-not $py) {
     $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
                 [Environment]::GetEnvironmentVariable("Path", "User")
     $py = Find-Python
-    if (-not $py) { Write-Host "نصب Python ناموفق بود." -ForegroundColor Red; exit 1 }
+    if (-not $py) { Write-Host "Python installation failed." -ForegroundColor Red; exit 1 }
 }
 Write-Host "Python: $py" -ForegroundColor Green
 
 # ------------- download latest release -------------
 New-Item -ItemType Directory -Force -Path $AppDir, $DataDir | Out-Null
 
-Write-Host "دریافت آخرین نسخه از گیت‌هاب ..." -ForegroundColor Yellow
+Write-Host "Downloading the latest release from GitHub ..." -ForegroundColor Yellow
 $relApi = "https://api.github.com/repos/$Repo/releases/latest"
 $rel = Invoke-RestMethod -Uri $relApi -UseBasicParsing
 $asset = $rel.assets | Where-Object { $_.name -like "*.zip" } | Select-Object -First 1
@@ -81,10 +81,10 @@ Expand-Archive -Path $zipPath -DestinationPath $tmpDir -Force
 $top = Get-ChildItem $tmpDir
 if ($top.Count -eq 1 -and $top[0].PSIsContainer) { $src = $top[0].FullName } else { $src = $tmpDir }
 Copy-Item -Path (Join-Path $src "*") -Destination $AppDir -Recurse -Force
-Write-Host "نسخه $($rel.tag_name) نصب شد." -ForegroundColor Green
+Write-Host "Version $($rel.tag_name) installed." -ForegroundColor Green
 
 # ------------- create venv + install requirements -------------
-Write-Host "ساخت محیط پایتون و نصب وابستگی‌ها ..." -ForegroundColor Yellow
+Write-Host "Creating Python environment and installing dependencies ..." -ForegroundColor Yellow
 $venv = Join-Path $InstallDir "venv"
 & cmd /c "$py -m venv `"$venv`""
 $venvPy = Join-Path $venv "Scripts\python.exe"
@@ -94,8 +94,8 @@ $venvPy = Join-Path $venv "Scripts\python.exe"
 # ------------- initial config -------------
 $cfgPath = Join-Path $DataDir "config.json"
 if (-not (Test-Path $cfgPath)) {
-    $botToken  = Read-Host "توکن بات بله را وارد کنید (می‌توانید بعداً در داشبورد وارد کنید، Enter برای رد شدن)"
-    $adminPass = Read-Host "رمز عبور مدیر داشبورد را تعیین کنید"
+    $botToken  = Read-Host "Enter the Bale bot token (press Enter to skip; you can set it later in the dashboard)"
+    $adminPass = Read-Host "Set the dashboard admin password (press Enter for 'admin')"
     if (-not $adminPass) { $adminPass = "admin" }
     $cfg = @{
         bot_token      = "$botToken"
@@ -132,7 +132,7 @@ netsh advfirewall firewall delete rule name="BaleBot Dashboard" 2>$null | Out-Nu
 netsh advfirewall firewall add rule name="BaleBot Dashboard" dir=in action=allow protocol=TCP localport=8585 | Out-Null
 
 Write-Host ""
-Write-Host "=== نصب کامل شد ===" -ForegroundColor Green
-Write-Host "داشبورد مدیریت:  http://localhost:8585" -ForegroundColor Cyan
-Write-Host "نام کاربری: admin"
+Write-Host "=== Installation complete ===" -ForegroundColor Green
+Write-Host "Management dashboard:  http://localhost:8585" -ForegroundColor Cyan
+Write-Host "Username: admin"
 Write-Host ""

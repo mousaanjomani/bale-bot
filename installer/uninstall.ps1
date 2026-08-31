@@ -12,7 +12,7 @@ if (-not $InstallDir) {
     if (Test-Path (Join-Path $candidate "run_bot.ps1")) { $InstallDir = $candidate }
     else { $InstallDir = "C:\BaleBot" }
 }
-Write-Host "حذف نصب از: $InstallDir"
+Write-Host "Uninstalling from: $InstallDir"
 
 schtasks /End /TN "BaleBot" /F | Out-Null
 schtasks /Delete /TN "BaleBot" /F | Out-Null
@@ -22,4 +22,4 @@ netsh advfirewall firewall delete rule name="BaleBot Dashboard" | Out-Null
 Remove-Item -Recurse -Force (Join-Path $InstallDir "app"), (Join-Path $InstallDir "venv"), (Join-Path $InstallDir "run_bot.ps1")
 if ($Purge) { Remove-Item -Recurse -Force $InstallDir }
 
-Write-Host "حذف نصب انجام شد." -ForegroundColor Green
+Write-Host "Uninstall complete." -ForegroundColor Green
