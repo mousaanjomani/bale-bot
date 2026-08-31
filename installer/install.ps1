@@ -7,7 +7,7 @@
 $ErrorActionPreference = "Stop"
 
 # ------------- settings (filled in by the release script) -------------
-$Repo       = "__UPDATE_REPO__"        # e.g. "someuser/bale-bot"
+$Repo       = "mousaanjomani/bale-bot"
 $InstallDir = "C:\BaleBot"
 $AppDir     = Join-Path $InstallDir "app"
 $DataDir    = Join-Path $InstallDir "data"

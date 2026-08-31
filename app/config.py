@@ -40,7 +40,7 @@ DEFAULTS = {
     "admin_password": "admin",
     "secret_key": "",
     # GitHub repo used by the in-dashboard upgrade button ("owner/repo")
-    "update_repo": "",
+    "update_repo": "mousaanjomani/bale-bot",
     "bot_display_name": "بات ما",
     "welcome_text": "سلام {name} 🌿\nبه ربات «{bot_name}» خوش آمدید.",
     "role_prompt": "لطفاً نقش خود را انتخاب کنید:",

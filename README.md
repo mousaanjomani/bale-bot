@@ -24,7 +24,7 @@ C:\BaleBot\
 PowerShell را **به عنوان Administrator** باز کنید و اجرا کنید:
 
 ```powershell
-irm https://raw.githubusercontent.com/<OWNER>/<REPO>/main/installer/install.ps1 | iex
+irm https://raw.githubusercontent.com/mousaanjomani/bale-bot/main/installer/install.ps1 | iex
 ```
 
 پس از نصب: داشبورد روی `http://<server-ip>:8585` (کاربر `admin`).
