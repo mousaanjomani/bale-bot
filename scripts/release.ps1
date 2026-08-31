@@ -27,7 +27,9 @@ $zip = Join-Path $env:TEMP "balebot-v$Version.zip"
 Remove-Item $zip -ErrorAction SilentlyContinue
 git archive --format=zip -o $zip HEAD app installer main.py requirements.txt CHANGELOG.md README.md
 
-# 4) create GitHub release with the zip asset
+# 4) create GitHub release with the zip + install.bat assets
+# (install.bat is attached so the permanent customer link keeps working:
+#  https://github.com/mousaanjomani/bale-bot/releases/latest/download/install.bat)
 if (-not $Notes) { $Notes = "نسخه $Version" }
-gh release create "v$Version" $zip --title "v$Version" --notes $Notes
+gh release create "v$Version" $zip (Join-Path $Root "installer\install.bat") --title "v$Version" --notes $Notes
 Write-Host "Release v$Version published." -ForegroundColor Green
