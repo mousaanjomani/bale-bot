@@ -122,13 +122,15 @@ while (`$true) {
 }
 "@ | Out-File -FilePath $runner -Encoding utf8
 
-schtasks /Delete /TN $TaskName /F 2>$null | Out-Null
+# delete via cmd so a "task not found" stderr line cannot trip ErrorActionPreference=Stop
+cmd /c "schtasks /Delete /TN $TaskName /F >nul 2>&1"
 $action = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$runner`""
 schtasks /Create /TN $TaskName /TR $action /SC ONSTART /RU SYSTEM /RL HIGHEST /F | Out-Null
+if ($LASTEXITCODE -ne 0) { Write-Host "Failed to register the scheduled task." -ForegroundColor Red; exit 1 }
 schtasks /Run /TN $TaskName | Out-Null
 
 # ------------- firewall -------------
-netsh advfirewall firewall delete rule name="BaleBot Dashboard" 2>$null | Out-Null
+cmd /c "netsh advfirewall firewall delete rule name=""BaleBot Dashboard"" >nul 2>&1"
 netsh advfirewall firewall add rule name="BaleBot Dashboard" dir=in action=allow protocol=TCP localport=8585 | Out-Null
 
 Write-Host ""
