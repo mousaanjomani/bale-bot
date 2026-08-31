@@ -1,4 +1,4 @@
-# =====================================================================
+﻿# =====================================================================
 #  Release helper (run on the DEV machine, not the customer server)
 #  Usage:  .\scripts\release.ps1 -Version 0.2.0 -Notes "توضیح تغییرات"
 #  Steps: bump version -> commit -> tag -> zip -> GitHub release
