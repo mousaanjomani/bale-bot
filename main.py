@@ -36,6 +36,10 @@ def main() -> None:
     poller.start()
     log.info("Bot poller started.")
 
+    from app import updater
+    updater.start_auto_check()
+    log.info("Auto update-check started (every 2 hours).")
+
     from app.web.server import app as flask_app
     from waitress import serve
 

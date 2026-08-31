@@ -13,6 +13,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 import zipfile
 
 import requests
@@ -83,6 +84,27 @@ def check() -> dict:
     }
     state["latest"] = info
     return info
+
+
+# ------------------------------------------------------------------
+# Auto-check: every 2 hours refresh state["latest"]; the dashboard shows
+# a banner when an update is available and applies it after the admin
+# confirms — nothing is installed without confirmation.
+AUTO_CHECK_INTERVAL = 2 * 3600
+
+
+def start_auto_check() -> None:
+    threading.Thread(target=_auto_loop, daemon=True, name="update-check").start()
+
+
+def _auto_loop() -> None:
+    time.sleep(30)  # let the app settle before the first check
+    while True:
+        try:
+            check()
+        except Exception:
+            log.exception("auto version check failed")
+        time.sleep(AUTO_CHECK_INTERVAL)
 
 
 def apply_async() -> bool:

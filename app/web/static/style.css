@@ -74,6 +74,8 @@ h2 { font-size: 16px; margin: 18px 0 10px; }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 .flash { background: #e2f6ea; color: #147a43; border: 1px solid #bfe6d0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+.update-banner { background: #fdf3dd; color: #7a5408; border: 1px solid #f0d9a0; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+.update-banner a { color: #7a5408; font-weight: 700; }
 .error { background: #fdeaea; color: #a83a37; border-radius: 8px; padding: 9px 12px; margin-bottom: 12px; font-size: 14px; }
 
 .logbox { background: #17212b; color: #d8e1ea; border-radius: 8px; padding: 14px; font-size: 12.5px; overflow-x: auto; white-space: pre-wrap; max-height: 480px; overflow-y: auto; }

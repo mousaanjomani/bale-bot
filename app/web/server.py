@@ -30,7 +30,11 @@ def login_required(fn):
 
 @app.context_processor
 def inject_globals():
-    return {"version": __version__}
+    latest = updater.state.get("latest") or {}
+    return {
+        "version": __version__,
+        "update_available": latest.get("has_update") and latest.get("latest"),
+    }
 
 
 @app.template_filter("dt")

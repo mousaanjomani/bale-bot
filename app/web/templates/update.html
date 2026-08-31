@@ -33,6 +33,9 @@ document.getElementById('btn-check').onclick = async () => {
   }
 };
 
+// بررسی خودکار هنگام باز شدن صفحه
+document.getElementById('btn-check').click();
+
 btnApply.onclick = async () => {
   if (!confirm('بروزرسانی نصب شود؟ سرویس چند لحظه راه‌اندازی مجدد می‌شود.')) return;
   btnApply.disabled = true;
