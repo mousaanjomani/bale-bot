@@ -36,6 +36,20 @@ $AppDir  = Join-Path $InstallDir "app"
 $DataDir = Join-Path $InstallDir "data"
 Write-Host "Install dir: $InstallDir" -ForegroundColor Cyan
 
+# ------------- stop any running instance -------------
+# Kill every process (python bot/dashboard + supervisor powershell) that was
+# started from the install dir, so reinstalls never leave duplicates behind.
+cmd /c "schtasks /End /TN $TaskName >nul 2>&1"
+$stale = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -like "*$InstallDir*" -and $_.ProcessId -ne $PID }
+foreach ($p in $stale) {
+    try { Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop } catch {}
+}
+if ($stale) {
+    Write-Host "Stopped $(@($stale).Count) running instance process(es)." -ForegroundColor Yellow
+    Start-Sleep -Seconds 2
+}
+
 # ------------- find or install Python -------------
 function Find-Python {
     foreach ($cmd in @("py -3", "python")) {
