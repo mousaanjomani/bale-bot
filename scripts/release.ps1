@@ -22,11 +22,10 @@ git commit -m "release: v$Version"
 git tag "v$Version"
 git push origin main --tags
 
-# 3) build release zip (app code only - no data, no git)
+# 3) build release zip (app code only - no data, no git, no __pycache__)
 $zip = Join-Path $env:TEMP "balebot-v$Version.zip"
 Remove-Item $zip -ErrorAction SilentlyContinue
-$items = @("app", "installer", "main.py", "requirements.txt", "CHANGELOG.md", "README.md")
-Compress-Archive -Path ($items | ForEach-Object { Join-Path $Root $_ }) -DestinationPath $zip
+git archive --format=zip -o $zip HEAD app installer main.py requirements.txt CHANGELOG.md README.md
 
 # 4) create GitHub release with the zip asset
 if (-not $Notes) { $Notes = "نسخه $Version" }
