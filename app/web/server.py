@@ -1,6 +1,8 @@
 """Flask web dashboard for managing the Bale bot on the customer server."""
 import functools
+import json
 import logging
+import threading
 import time
 
 from flask import (
@@ -84,7 +86,10 @@ def settings():
     if request.method == "POST":
         values = {
             "bot_token": request.form.get("bot_token", "").strip(),
+            "bot_display_name": request.form.get("bot_display_name", "").strip(),
             "welcome_text": request.form.get("welcome_text", "").strip(),
+            "default_reply": request.form.get("default_reply", "").strip(),
+            "wip_reply": request.form.get("wip_reply", "").strip(),
             "admin_user": request.form.get("admin_user", "admin").strip() or "admin",
         }
         new_pass = request.form.get("admin_password", "")
@@ -98,6 +103,64 @@ def settings():
         flash("تنظیمات ذخیره شد. ✅")
         return redirect(url_for("settings"))
     return render_template("settings.html", cfg=config.all_config())
+
+
+@app.route("/menu", methods=["GET", "POST"])
+@login_required
+def menu_editor():
+    if request.method == "POST":
+        try:
+            data = json.loads(request.form.get("data", "{}"))
+            roles = data.get("roles", [])
+            menus = data.get("menus", {})
+            assert isinstance(roles, list) and isinstance(menus, dict)
+            config.update({"roles": roles, "menus": menus})
+            flash("منوی بات ذخیره شد. ✅")
+        except Exception:
+            flash("خطا در ذخیره منو — ساختار نامعتبر است.")
+        return redirect(url_for("menu_editor"))
+    return render_template(
+        "menu.html",
+        roles=config.get("roles", []),
+        menus=config.get("menus", {}),
+    )
+
+
+@app.route("/broadcast", methods=["GET", "POST"])
+@login_required
+def broadcast():
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        detail = request.form.get("detail", "").strip()
+        target = request.form.get("target", "all")
+        if not title:
+            flash("عنوان اعلان را وارد کنید.")
+            return redirect(url_for("broadcast"))
+
+        event_id = store.create_event(title, detail)
+        targets = [
+            u["chat_id"] for u in store.get_users(limit=10000)
+            if target == "all" or (u["role"] or "") == target
+        ]
+
+        def _send():
+            from app.bot.client import BaleClient
+            from app.bot.handlers import send_event_to
+            client = BaleClient()
+            for cid in targets:
+                try:
+                    send_event_to(client, cid, event_id, title)
+                except Exception:
+                    log.exception("broadcast to %s failed", cid)
+
+        threading.Thread(target=_send, daemon=True).start()
+        flash(f"اعلان #{event_id} برای {len(targets)} کاربر در حال ارسال است. ✅")
+        return redirect(url_for("broadcast"))
+    return render_template(
+        "broadcast.html",
+        roles=config.get("roles", []),
+        events=store.get_events(50),
+    )
 
 
 @app.route("/users")

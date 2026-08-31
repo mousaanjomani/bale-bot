@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}منوی بات | مدیریت بات بله{% endblock %}
+{% block content %}
+<h1>منوی بات</h1>
+<p class="hint" style="margin-bottom:14px">
+  نقش‌ها و دکمه‌های منوی هر نقش را اینجا ویرایش کنید. دکمه‌ها دوتا در هر ردیف چیده می‌شوند؛
+  گزینه «عریض» یک ردیف کامل می‌گیرد. «پاسخ» متنی است که بات پس از کلیک روی دکمه می‌فرستد
+  (خالی = «به‌زودی فعال می‌شود»).
+</p>
+
+<form method="post" id="menu-form" class="panel">
+  <div id="roles-box"></div>
+  <button type="button" class="btn" onclick="addRole()">➕ افزودن نقش</button>
+  <input type="hidden" name="data" id="data-field">
+  <div><button type="submit" class="btn ok">💾 ذخیره منو</button></div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const state = {
+  roles: {{ roles | tojson }},
+  menus: {{ menus | tojson }},
+};
+
+function render() {
+  const box = document.getElementById('roles-box');
+  box.innerHTML = '';
+  state.roles.forEach((role, ri) => {
+    const items = state.menus[role.key] || [];
+    const div = document.createElement('div');
+    div.className = 'panel';
+    div.innerHTML = `
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label style="margin:0">عنوان نقش:</label>
+        <input value="${esc(role.title)}" style="max-width:180px" onchange="state.roles[${ri}].title=this.value">
+        <span class="hint">(کلید: ${esc(role.key)})</span>
+        <button type="button" class="btn" onclick="delRole(${ri})">🗑 حذف نقش</button>
+      </div>
+      <table class="table" style="margin-top:10px">
+        <tr><th style="width:40%">عنوان دکمه (با ایموجی)</th><th>پاسخ</th><th style="width:60px">عریض</th><th style="width:90px"></th></tr>
+        ${items.map((it, ii) => `
+          <tr>
+            <td><input value="${esc(it.title)}" onchange="mi(${ri},${ii}).title=this.value"></td>
+            <td><input value="${esc(it.reply || '')}" onchange="mi(${ri},${ii}).reply=this.value"></td>
+            <td style="text-align:center"><input type="checkbox" ${it.wide ? 'checked' : ''} onchange="mi(${ri},${ii}).wide=this.checked" style="width:auto"></td>
+            <td><button type="button" class="btn" style="margin:0;padding:4px 10px" onclick="delItem(${ri},${ii})">🗑</button></td>
+          </tr>`).join('')}
+      </table>
+      <button type="button" class="btn" onclick="addItem(${ri})">➕ افزودن دکمه</button>
+    `;
+    box.appendChild(div);
+  });
+}
+
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function mi(ri, ii) { return state.menus[state.roles[ri].key][ii]; }
+function addItem(ri) {
+  const key = state.roles[ri].key;
+  if (!state.menus[key]) state.menus[key] = [];
+  state.menus[key].push({id: 'item' + Date.now(), title: '🔹 دکمه جدید', reply: '', wide: false});
+  render();
+}
+function delItem(ri, ii) { state.menus[state.roles[ri].key].splice(ii, 1); render(); }
+function addRole() {
+  const key = 'role' + Date.now();
+  state.roles.push({key, title: 'نقش جدید'});
+  state.menus[key] = [];
+  render();
+}
+function delRole(ri) {
+  if (!confirm('این نقش و منوی آن حذف شود؟')) return;
+  delete state.menus[state.roles[ri].key];
+  state.roles.splice(ri, 1);
+  render();
+}
+document.getElementById('menu-form').onsubmit = () => {
+  document.getElementById('data-field').value = JSON.stringify(state);
+};
+render();
+</script>
+{% endblock %}

@@ -14,6 +14,8 @@
       <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/' }}">🏠 داشبورد</a>
       <a href="{{ url_for('users') }}" class="{{ 'active' if request.path == '/users' }}">👥 کاربران</a>
       <a href="{{ url_for('messages') }}" class="{{ 'active' if request.path == '/messages' }}">💬 پیام‌ها</a>
+      <a href="{{ url_for('menu_editor') }}" class="{{ 'active' if request.path == '/menu' }}">🔘 منوی بات</a>
+      <a href="{{ url_for('broadcast') }}" class="{{ 'active' if request.path == '/broadcast' }}">📣 ارسال اعلان</a>
       <a href="{{ url_for('settings') }}" class="{{ 'active' if request.path == '/settings' }}">⚙️ تنظیمات</a>
       <a href="{{ url_for('logs') }}" class="{{ 'active' if request.path == '/logs' }}">📜 لاگ‌ها</a>
       <a href="{{ url_for('update_page') }}" class="{{ 'active' if request.path == '/update' }}">⬆️ بروزرسانی</a>

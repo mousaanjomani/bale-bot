@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}ارسال اعلان | مدیریت بات بله{% endblock %}
+{% block content %}
+<h1>ارسال اعلان</h1>
+<form method="post" class="panel form">
+  <label>عنوان اعلان</label>
+  <input name="title" placeholder="مثال: فضای دیسک سرور به ۹۵٪ رسید">
+  <label>شرح کامل (اختیاری — با /e شماره‌رویداد نمایش داده می‌شود)</label>
+  <textarea name="detail" rows="4"></textarea>
+  <label>گیرندگان</label>
+  <select name="target" style="max-width:480px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit">
+    <option value="all">همه کاربران</option>
+    {% for r in roles %}<option value="{{ r.key }}">نقش «{{ r.title }}»</option>{% endfor %}
+  </select>
+  <div class="hint">اعلان به سبک رویداد ارسال می‌شود: شناسه #، دکمه «✅ دیدم» و «📄 شرح کامل».</div>
+  <button type="submit" class="btn ok">📣 ارسال اعلان</button>
+</form>
+
+<div class="panel">
+  <h2>رویدادهای اخیر</h2>
+  <table class="table">
+    <tr><th>#</th><th>عنوان</th><th>زمان</th><th>وضعیت</th></tr>
+    {% for e in events %}
+    <tr>
+      <td dir="ltr">#{{ e.id }}</td>
+      <td>{{ e.title }}</td>
+      <td dir="ltr">{{ e.created | dt }}</td>
+      <td>{{ '✅ تأیید شده' if e.acked_by else '⏳ در انتظار تأیید' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">رویدادی ثبت نشده است.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

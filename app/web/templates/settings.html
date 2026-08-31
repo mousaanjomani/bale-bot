@@ -8,8 +8,17 @@
   <input name="bot_token" value="{{ cfg.bot_token }}" dir="ltr" placeholder="123456789:xxxxxxxx">
   <div class="hint">توکن را از بات‌ساز بله (@botfather) دریافت کنید.</div>
 
-  <label>متن خوش‌آمدگویی (/start)</label>
+  <label>نام نمایشی بات</label>
+  <input name="bot_display_name" value="{{ cfg.bot_display_name }}" placeholder="مثال: کارگاه چوب سبز">
+
+  <label>متن خوش‌آمدگویی (/start) — {name} نام کاربر و {bot_name} نام بات می‌شود</label>
   <textarea name="welcome_text" rows="3">{{ cfg.welcome_text }}</textarea>
+
+  <label>پاسخ پیش‌فرض به پیام‌های متنی</label>
+  <input name="default_reply" value="{{ cfg.default_reply }}">
+
+  <label>پاسخ دکمه‌های هنوز فعال‌نشده</label>
+  <input name="wip_reply" value="{{ cfg.wip_reply }}">
 
   <h2>مدیر</h2>
   <label>نام کاربری مدیر</label>

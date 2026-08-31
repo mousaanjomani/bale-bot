@@ -40,8 +40,20 @@ def init_db() -> None:
             key   TEXT PRIMARY KEY,
             value TEXT
         );
+        CREATE TABLE IF NOT EXISTS events (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            title    TEXT,
+            detail   TEXT,
+            created  INTEGER,
+            acked_by INTEGER,
+            acked_at INTEGER
+        );
         """
     )
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN role TEXT")
+    except sqlite3.OperationalError:
+        pass  # column already exists
     c.commit()
 
 
@@ -93,6 +105,52 @@ def recent_messages(limit: int = 100):
         "LEFT JOIN users u ON u.chat_id = m.chat_id "
         "ORDER BY m.id DESC LIMIT ?",
         (limit,),
+    ).fetchall()
+
+
+def set_user_role(chat_id: int, role: str) -> None:
+    c = _conn()
+    c.execute("UPDATE users SET role=? WHERE chat_id=?", (role, chat_id))
+    c.commit()
+
+
+def get_user_role(chat_id: int):
+    row = _conn().execute(
+        "SELECT role FROM users WHERE chat_id=?", (chat_id,)
+    ).fetchone()
+    return row["role"] if row else None
+
+
+def create_event(title: str, detail: str) -> int:
+    c = _conn()
+    cur = c.execute(
+        "INSERT INTO events (title, detail, created) VALUES (?, ?, ?)",
+        (title, detail, int(time.time())),
+    )
+    c.commit()
+    return cur.lastrowid
+
+
+def get_event(event_id) -> "sqlite3.Row | None":
+    try:
+        eid = int(event_id)
+    except (TypeError, ValueError):
+        return None
+    return _conn().execute("SELECT * FROM events WHERE id=?", (eid,)).fetchone()
+
+
+def ack_event(event_id, chat_id: int) -> None:
+    c = _conn()
+    c.execute(
+        "UPDATE events SET acked_by=?, acked_at=? WHERE id=?",
+        (chat_id, int(time.time()), int(event_id)),
+    )
+    c.commit()
+
+
+def get_events(limit: int = 100):
+    return _conn().execute(
+        "SELECT * FROM events ORDER BY id DESC LIMIT ?", (limit,)
     ).fetchall()
 
 

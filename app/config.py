@@ -41,8 +41,44 @@ DEFAULTS = {
     "secret_key": "",
     # GitHub repo used by the in-dashboard upgrade button ("owner/repo")
     "update_repo": "",
-    "welcome_text": "سلام! به بات ما خوش آمدید 🌟",
+    "bot_display_name": "بات ما",
+    "welcome_text": "سلام {name} 🌿\nبه ربات «{bot_name}» خوش آمدید.",
+    "role_prompt": "لطفاً نقش خود را انتخاب کنید:",
+    "role_selected_text": "نقش «{role}» انتخاب شد ✅\nچه کاری برایتان انجام دهم؟ (برای عوض‌کردن نقش، دوباره /start بزنید)",
+    "expired_button_text": "این دکمه مربوط به صفحه‌ای است که بسته شده. از منوی زیر دوباره انتخاب کنید:",
+    "default_reply": "پیام شما دریافت شد ✅",
+    "wip_reply": "این بخش به‌زودی فعال می‌شود 🛠",
     "bot_enabled": True,
+    # نقش‌ها و منوی هر نقش — از داشبورد قابل ویرایش است
+    "roles": [
+        {"key": "staff", "title": "پرسنل"},
+        {"key": "manager", "title": "مدیر"},
+    ],
+    "menus": {
+        "staff": [
+            {"id": "acct", "title": "📋 کارت حساب", "reply": "", "wide": False},
+            {"id": "due", "title": "💰 ماندهٔ مطالبات", "reply": "", "wide": False},
+            {"id": "timesheet", "title": "⏱ تایم‌شیت", "reply": "", "wide": False},
+            {"id": "payslip", "title": "🧾 فیش حقوقی", "reply": "", "wide": False},
+            {"id": "file", "title": "👤 پروندهٔ پرسنلی", "reply": "", "wide": False},
+            {"id": "requests", "title": "📁 پیگیری درخواست‌ها", "reply": "", "wide": False},
+            {"id": "advance", "title": "💵 تقاضای مساعده", "reply": "", "wide": False},
+            {"id": "leave", "title": "🌴 تقاضای مرخصی", "reply": "", "wide": False},
+            {"id": "card", "title": "🛒 شارژ کارت خرید", "reply": "", "wide": False},
+            {"id": "loan", "title": "🏦 تقاضای وام", "reply": "", "wide": False},
+            {"id": "insurance2", "title": "🏥 بیمهٔ تکمیلی", "reply": "", "wide": False},
+            {"id": "carins", "title": "🚗 بیمهٔ اتومبیل", "reply": "", "wide": False},
+            {"id": "contract", "title": "📄 قرارداد استخدامی", "reply": "", "wide": False},
+            {"id": "workcert", "title": "📃 گواهی اشتغال", "reply": "", "wide": False},
+            {"id": "leavecard", "title": "📊 کارتکس مرخصی", "reply": "", "wide": True},
+            {"id": "other", "title": "🤲 درخواست یا سؤال دیگر", "reply": "", "wide": True},
+        ],
+        "manager": [
+            {"id": "team", "title": "👥 کارکرد تیم", "reply": "", "wide": False},
+            {"id": "requests", "title": "📁 پیگیری درخواست‌ها", "reply": "", "wide": False},
+            {"id": "other", "title": "🤲 درخواست یا سؤال دیگر", "reply": "", "wide": True},
+        ],
+    },
 }
 
 
