@@ -13,6 +13,14 @@ from app import config, org, store
 from app.bot import workflow
 from app.bot.client import BaleClient
 from app.utils import jalali
+from app.utils.phone import normalize_phone
+
+CONTACT_KEYBOARD = {
+    "keyboard": [[{"text": "📱 ارسال شماره موبایل", "request_contact": True}]],
+    "resize_keyboard": True,
+    "one_time_keyboard": True,
+}
+REMOVE_KEYBOARD = {"remove_keyboard": True}
 
 log = logging.getLogger("bale.handlers")
 
@@ -38,7 +46,11 @@ def _on_message(client: BaleClient, msg: dict) -> None:
         chat_id, user.get("first_name", ""), user.get("last_name", ""),
         user.get("username", ""),
     )
-    store.log_message(chat_id, "in", text)
+    store.log_message(chat_id, "in", text or "[contact]")
+
+    if msg.get("contact"):
+        _on_contact(client, chat_id, user, msg["contact"])
+        return
 
     if text.startswith("/start"):
         store.set_chat_state(chat_id, None)
@@ -55,6 +67,12 @@ def _on_message(client: BaleClient, msg: dict) -> None:
     if state:
         _handle_state(client, chat_id, text, state)
         return
+    if store.person_by_chat(chat_id) is None:
+        _reply(client, chat_id,
+               "برای استفاده از بات ابتدا باید شناسایی شوید — "
+               "با دکمه زیر شماره موبایل خود را به اشتراک بگذارید:",
+               CONTACT_KEYBOARD)
+        return
     _reply(client, chat_id, config.get("default_reply", "✅"))
 
 
@@ -69,39 +87,57 @@ def _start(client: BaleClient, chat_id: int, user: dict) -> None:
         name = (user.get("first_name", "") + " " + user.get("last_name", "")).strip()
         _reply(client, chat_id,
                f"سلام {name or 'همکار گرامی'} 🌿\nبه ربات «{org_name}» خوش آمدید.\n\n"
-               "برای شناسایی، لطفاً «کد پرسنلی» خود را ارسال کنید:")
-        store.set_chat_state(chat_id, {"flow": "identify"})
+               "برای شناسایی، لطفاً با دکمه زیر شماره موبایل خود را به اشتراک بگذارید:",
+               CONTACT_KEYBOARD)
+
+
+def _on_contact(client: BaleClient, chat_id: int, user: dict, contact: dict) -> None:
+    owner_id = contact.get("user_id")
+    if owner_id and user.get("id") and owner_id != user["id"]:
+        _reply(client, chat_id,
+               "لطفاً شماره موبایل «خودتان» را با دکمه ارسال کنید، نه مخاطب دیگری را.",
+               CONTACT_KEYBOARD)
+        return
+    phone = normalize_phone(contact.get("phone_number", ""))
+    if not phone:
+        _reply(client, chat_id, "شماره دریافت نشد؛ دوباره تلاش کنید.", CONTACT_KEYBOARD)
+        return
+    store.set_user_phone(chat_id, phone)
+
+    existing = store.person_by_chat(chat_id)
+    if existing:
+        _send_main_menu(client, chat_id, existing)
+        return
+
+    person = store.person_by_phone(phone)
+    if person is None:
+        _reply(client, chat_id,
+               f"شماره {phone} دریافت و ثبت شد ✅\n"
+               "اما این شماره هنوز در فهرست پرسنل تعریف نشده است.\n"
+               "لطفاً به مدیر سیستم اطلاع دهید تا شما را اضافه کند؛ "
+               "سپس دوباره /start را بزنید.", REMOVE_KEYBOARD)
+        return
+    if person["chat_id"] and person["chat_id"] != chat_id:
+        _reply(client, chat_id,
+               "این شماره قبلاً به حساب دیگری متصل شده است ⚠️\n"
+               "در صورت مغایرت با مدیر سیستم تماس بگیرید.", REMOVE_KEYBOARD)
+        return
+    store.link_person_chat(person["id"], chat_id)
+    store.set_chat_state(chat_id, None)
+    _reply(client, chat_id,
+           f"شناسایی انجام شد ✅\n{org.person_title(person['id'])}", REMOVE_KEYBOARD)
+    _send_main_menu(client, chat_id, person)
 
 
 def _handle_state(client: BaleClient, chat_id: int, text: str, state: dict) -> None:
     flow = state.get("flow")
-    if flow == "identify":
-        _identify(client, chat_id, text)
-    elif flow == "form":
+    if flow == "form":
         _form_input(client, chat_id, text, state)
     elif flow == "reject_reason":
         _finish_reject(client, chat_id, text, state)
     else:
         store.set_chat_state(chat_id, None)
         _reply(client, chat_id, config.get("default_reply", "✅"))
-
-
-def _identify(client: BaleClient, chat_id: int, text: str) -> None:
-    code = workflow.normalize_number(text)
-    person = store.person_by_code(code)
-    if person is None:
-        _reply(client, chat_id,
-               "کد پرسنلی یافت نشد ⚠️\nلطفاً دوباره تلاش کنید یا با مدیر سیستم تماس بگیرید.")
-        return
-    if person["chat_id"] and person["chat_id"] != chat_id:
-        _reply(client, chat_id,
-               "این کد پرسنلی قبلاً به حساب دیگری متصل شده است ⚠️\n"
-               "در صورت مغایرت با مدیر سیستم تماس بگیرید.")
-        return
-    store.link_person_chat(person["id"], chat_id)
-    store.set_chat_state(chat_id, None)
-    _reply(client, chat_id, f"شناسایی انجام شد ✅\n{org.person_title(person['id'])}")
-    _send_main_menu(client, chat_id, person)
 
 
 # ---------------------------------------------------------------- main menu
@@ -187,7 +223,7 @@ def _on_callback(client: BaleClient, cq: dict) -> None:
 def _require_person(client: BaleClient, chat_id: int, person) -> bool:
     if person is None:
         _reply(client, chat_id,
-               "ابتدا باید شناسایی شوید — /start را بزنید و کد پرسنلی را وارد کنید.")
+               "ابتدا باید شناسایی شوید — /start را بزنید و شماره موبایل خود را به اشتراک بگذارید.")
         return False
     return True
 
@@ -205,6 +241,15 @@ def _start_process(client: BaleClient, chat_id: int, person, proc_id: str) -> No
     if proc is None or not proc["active"]:
         _expired(client, chat_id)
         return
+    # همه مراحل «شخص مشخص» باید به پرسنل موجود اشاره کنند
+    for step in proc["steps"]:
+        a = step.get("assignee") or {}
+        if a.get("type") == "person" and not store.get_person(a.get("person") or ""):
+            _reply(client, chat_id,
+                   f"⚠️ پروسه «{proc['name']}» هنوز به‌طور کامل تنظیم نشده است "
+                   f"(مسئول مرحله «{step.get('title', '')}» تعیین نشده).\n"
+                   "لطفاً به مدیر سیستم اطلاع دهید.")
+            return
     state = {"flow": "form", "proc": proc["id"], "idx": 0, "data": {}}
     store.set_chat_state(chat_id, state)
     _ask_field(client, chat_id, proc, 0)

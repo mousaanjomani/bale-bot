@@ -5,6 +5,7 @@ import threading
 import time
 
 from app import config
+from app.utils.phone import normalize_phone
 
 _local = threading.local()
 
@@ -59,7 +60,8 @@ def init_db() -> None:
         CREATE TABLE IF NOT EXISTS people (
             id      TEXT PRIMARY KEY,
             name    TEXT,
-            code    TEXT,         -- personnel code, used to link the Bale account
+            code    TEXT,         -- personnel code (optional)
+            phone   TEXT,         -- mobile number, used to link the Bale account
             unit    TEXT,
             chat_id INTEGER       -- linked Bale chat id (NULL = not linked)
         );
@@ -98,10 +100,15 @@ def init_db() -> None:
         );
         """
     )
-    try:
-        c.execute("ALTER TABLE users ADD COLUMN role TEXT")
-    except sqlite3.OperationalError:
-        pass  # column already exists
+    for stmt in (
+        "ALTER TABLE users ADD COLUMN role TEXT",
+        "ALTER TABLE users ADD COLUMN phone TEXT",
+        "ALTER TABLE people ADD COLUMN phone TEXT",
+    ):
+        try:
+            c.execute(stmt)
+        except sqlite3.OperationalError:
+            pass  # column already exists
     c.commit()
 
 
@@ -232,6 +239,19 @@ def person_by_code(code: str):
     ).fetchone()
 
 
+def person_by_phone(phone: str):
+    """phone must already be normalized (see workflow.normalize_phone)."""
+    return _conn().execute(
+        "SELECT * FROM people WHERE phone=? AND phone != ''", (phone,)
+    ).fetchone()
+
+
+def set_user_phone(chat_id: int, phone: str) -> None:
+    c = _conn()
+    c.execute("UPDATE users SET phone=? WHERE chat_id=?", (phone, chat_id))
+    c.commit()
+
+
 def link_person_chat(person_id: str, chat_id) -> None:
     c = _conn()
     if chat_id:
@@ -254,8 +274,10 @@ def replace_org(units: list, people: list) -> None:
         )
     for p in people:
         c.execute(
-            "INSERT INTO people (id, name, code, unit, chat_id) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO people (id, name, code, phone, unit, chat_id) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
             (p["id"], p.get("name", ""), str(p.get("code", "")).strip(),
+             normalize_phone(p.get("phone", "")),
              p.get("unit"), p.get("chat_id") or old_links.get(p["id"])),
         )
     c.commit()

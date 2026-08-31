@@ -20,7 +20,8 @@
 
   <h2 style="margin-top:24px">پرسنل</h2>
   <div class="hint" style="margin-bottom:8px">
-    هر پرسنل با ارسال «کد پرسنلی» خود در بات شناسایی و متصل می‌شود؛ اتصال دستی هم از ستون «حساب بله» ممکن است.
+    هر پرسنل با «اشتراک‌گذاری شماره موبایل» خود در بات شناسایی و متصل می‌شود —
+    شماره موبایل اینجا باید ثبت شده باشد. اتصال دستی هم از ستون «حساب بله» ممکن است.
   </div>
   <div id="people-box"></div>
   <button type="button" class="btn" onclick="addPerson()">➕ افزودن پرسنل</button>
@@ -69,10 +70,11 @@ function render() {
 
   document.getElementById('people-box').innerHTML = `
     <div class="table-wrap"><table class="table">
-    <tr><th>نام</th><th style="width:110px">کد پرسنلی</th><th>واحد</th><th>حساب بله</th><th style="width:60px"></th></tr>
+    <tr><th>نام</th><th style="width:130px">موبایل</th><th style="width:90px">کد پرسنلی</th><th>واحد</th><th>حساب بله</th><th style="width:60px"></th></tr>
     ${state.people.map((p, i) => `
       <tr>
         <td><input value="${esc(p.name)}" onchange="state.people[${i}].name=this.value"></td>
+        <td><input value="${esc(p.phone || '')}" dir="ltr" placeholder="0912..." onchange="state.people[${i}].phone=this.value"></td>
         <td><input value="${esc(p.code)}" dir="ltr" onchange="state.people[${i}].code=this.value"></td>
         <td><select onchange="state.people[${i}].unit=this.value||null">${unitOptions(p.unit)}</select></td>
         <td><select onchange="state.people[${i}].chat_id=this.value?parseInt(this.value):null">${botUserOptions(p.chat_id)}</select></td>
@@ -90,7 +92,7 @@ function delUnit(i) {
   state.people.forEach(p => { if (p.unit === id) p.unit = null; });
   render();
 }
-function addPerson() { state.people.push({id: 'p' + Date.now(), name: '', code: '', unit: null, chat_id: null}); render(); }
+function addPerson() { state.people.push({id: 'p' + Date.now(), name: '', code: '', phone: '', unit: null, chat_id: null}); render(); }
 function delPerson(i) {
   if (!confirm('این پرسنل حذف شود؟')) return;
   const id = state.people[i].id;

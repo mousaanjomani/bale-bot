@@ -4,13 +4,13 @@
 <h1>کاربران</h1>
 <div class="panel">
   <table class="table">
-    <tr><th>نام</th><th>نام کاربری</th><th>شناسه</th><th>نقش</th><th>تعداد پیام</th><th>آخرین فعالیت</th></tr>
+    <tr><th>نام</th><th>نام کاربری</th><th>شناسه</th><th>موبایل</th><th>تعداد پیام</th><th>آخرین فعالیت</th></tr>
     {% for u in users %}
     <tr>
       <td>{{ u.first_name }} {{ u.last_name }}</td>
       <td dir="ltr">{{ '@' + u.username if u.username else '—' }}</td>
       <td dir="ltr">{{ u.chat_id }}</td>
-      <td>{{ u.role or '—' }}</td>
+      <td dir="ltr">{{ u.phone or '—' }}</td>
       <td>{{ u.msg_count }}</td>
       <td dir="ltr">{{ u.last_seen | dt }}</td>
     </tr>
