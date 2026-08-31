@@ -9,8 +9,8 @@
   <textarea name="detail" rows="4"></textarea>
   <label>گیرندگان</label>
   <select name="target" style="max-width:480px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit">
-    <option value="all">همه کاربران</option>
-    {% for r in roles %}<option value="{{ r.key }}">نقش «{{ r.title }}»</option>{% endfor %}
+    <option value="all">همه کاربران بات</option>
+    <option value="staff">فقط پرسنلِ متصل‌شده</option>
   </select>
   <div class="hint">اعلان به سبک رویداد ارسال می‌شود: شناسه #، دکمه «✅ دیدم» و «📄 شرح کامل».</div>
   <button type="submit" class="btn ok">📣 ارسال اعلان</button>

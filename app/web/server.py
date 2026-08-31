@@ -1,16 +1,19 @@
 """Flask web dashboard for managing the Bale bot on the customer server."""
 import functools
+import glob
 import json
 import logging
+import os
 import threading
 import time
 
 from flask import (
-    Flask, flash, jsonify, redirect, render_template, request, session, url_for,
+    Flask, flash, jsonify, redirect, render_template, request, send_file,
+    session, url_for,
 )
 
-from app import config, store, updater
-from app.bot import poller
+from app import config, org, store, updater
+from app.bot import poller, workflow
 from app.version import __version__
 
 log = logging.getLogger("web")
@@ -28,12 +31,19 @@ def login_required(fn):
     return wrapper
 
 
+def _logo_file():
+    files = glob.glob(os.path.join(config.DATA_DIR, "logo.*"))
+    return files[0] if files else None
+
+
 @app.context_processor
 def inject_globals():
     latest = updater.state.get("latest") or {}
     return {
         "version": __version__,
         "update_available": latest.get("has_update") and latest.get("latest"),
+        "org_name": config.get("org_name", ""),
+        "has_logo": bool(_logo_file()),
     }
 
 
@@ -91,7 +101,6 @@ def settings():
         values = {
             "bot_token": request.form.get("bot_token", "").strip(),
             "bot_display_name": request.form.get("bot_display_name", "").strip(),
-            "welcome_text": request.form.get("welcome_text", "").strip(),
             "default_reply": request.form.get("default_reply", "").strip(),
             "wip_reply": request.form.get("wip_reply", "").strip(),
             "admin_user": request.form.get("admin_user", "admin").strip() or "admin",
@@ -114,20 +123,123 @@ def settings():
 def menu_editor():
     if request.method == "POST":
         try:
-            data = json.loads(request.form.get("data", "{}"))
-            roles = data.get("roles", [])
-            menus = data.get("menus", {})
-            assert isinstance(roles, list) and isinstance(menus, dict)
-            config.update({"roles": roles, "menus": menus})
-            flash("منوی بات ذخیره شد. ✅")
+            items = json.loads(request.form.get("data", "[]"))
+            assert isinstance(items, list)
+            config.update({"menus": {"extra": items}})
+            flash("دکمه‌های سفارشی ذخیره شد. ✅")
         except Exception:
-            flash("خطا در ذخیره منو — ساختار نامعتبر است.")
+            flash("خطا در ذخیره — ساختار نامعتبر است.")
         return redirect(url_for("menu_editor"))
     return render_template(
         "menu.html",
-        roles=config.get("roles", []),
-        menus=config.get("menus", {}),
+        items=(config.get("menus", {}) or {}).get("extra", []),
     )
+
+
+# ---------------------------------------------------------------- org chart
+
+@app.route("/org", methods=["GET", "POST"])
+@login_required
+def org_page():
+    if request.method == "POST":
+        try:
+            data = json.loads(request.form.get("data", "{}"))
+            units = data.get("units", [])
+            people = data.get("people", [])
+            assert isinstance(units, list) and isinstance(people, list)
+            store.replace_org(units, people)
+            flash("چارت سازمانی ذخیره شد. ✅")
+        except Exception:
+            log.exception("org save failed")
+            flash("خطا در ذخیره چارت سازمانی.")
+        return redirect(url_for("org_page"))
+    units = [dict(u) for u in store.get_units()]
+    people = [dict(p) for p in store.get_people()]
+    return render_template(
+        "org.html", units=units, people=people,
+        bot_users=[dict(u) for u in store.get_users(limit=500)],
+    )
+
+
+@app.route("/org/settings", methods=["POST"])
+@login_required
+def org_settings():
+    config.update({"org_name": request.form.get("org_name", "").strip()})
+    f = request.files.get("logo")
+    if f and f.filename:
+        ext = os.path.splitext(f.filename)[1].lower()
+        if ext in (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"):
+            for old in glob.glob(os.path.join(config.DATA_DIR, "logo.*")):
+                os.remove(old)
+            f.save(os.path.join(config.DATA_DIR, "logo" + ext))
+        else:
+            flash("فرمت لوگو باید تصویر باشد (png/jpg/svg/...).")
+    flash("مشخصات سازمان ذخیره شد. ✅")
+    return redirect(url_for("org_page"))
+
+
+@app.route("/logo")
+def logo():
+    path = _logo_file()
+    if not path:
+        return ("", 404)
+    return send_file(path)
+
+
+# ---------------------------------------------------------------- processes
+
+@app.route("/processes", methods=["GET", "POST"])
+@login_required
+def processes_page():
+    if request.method == "POST":
+        try:
+            data = json.loads(request.form.get("data", "{}"))
+            if data.get("delete"):
+                store.delete_process(int(data["delete"]))
+                flash("پروسه حذف شد.")
+            else:
+                for p in data.get("processes", []):
+                    store.save_process(p)
+                flash("پروسه‌ها ذخیره شدند. ✅")
+        except Exception:
+            log.exception("process save failed")
+            flash("خطا در ذخیره پروسه‌ها.")
+        return redirect(url_for("processes_page"))
+    return render_template(
+        "processes.html",
+        processes=store.get_processes(),
+        people=[dict(p) for p in store.get_people()],
+    )
+
+
+# ---------------------------------------------------------------- requests
+
+@app.route("/requests")
+@login_required
+def requests_page():
+    rows = []
+    for req in store.get_requests():
+        proc = store.get_process(req["process_id"])
+        logs = store.get_request_log(req["id"])
+        rows.append({
+            "req": req,
+            "proc": proc,
+            "summary": workflow.request_summary(req, proc),
+            "status_fa": workflow.STATUS_FA.get(req["status"], req["status"]),
+            "assignee": org.person_title(req["assignee"]) if req["assignee"] else "",
+            "requester": org.person_title(req["requester"]),
+            "logs": [
+                {
+                    "actor": org.person_title(l["actor"]) if l["actor"] else "سیستم",
+                    "action": {"submit": "ثبت درخواست", "approve": "تأیید",
+                               "reject": "رد", "execute": "اجرا"}.get(l["action"], l["action"]),
+                    "comment": l["comment"],
+                    "ts": l["ts"],
+                }
+                for l in logs
+            ],
+        })
+    return render_template("requests.html", rows=rows)
 
 
 @app.route("/broadcast", methods=["GET", "POST"])
@@ -142,10 +254,10 @@ def broadcast():
             return redirect(url_for("broadcast"))
 
         event_id = store.create_event(title, detail)
-        targets = [
-            u["chat_id"] for u in store.get_users(limit=10000)
-            if target == "all" or (u["role"] or "") == target
-        ]
+        if target == "staff":
+            targets = [p["chat_id"] for p in store.get_people() if p["chat_id"]]
+        else:
+            targets = [u["chat_id"] for u in store.get_users(limit=10000)]
 
         def _send():
             from app.bot.client import BaleClient
@@ -160,11 +272,7 @@ def broadcast():
         threading.Thread(target=_send, daemon=True).start()
         flash(f"اعلان #{event_id} برای {len(targets)} کاربر در حال ارسال است. ✅")
         return redirect(url_for("broadcast"))
-    return render_template(
-        "broadcast.html",
-        roles=config.get("roles", []),
-        events=store.get_events(50),
-    )
+    return render_template("broadcast.html", events=store.get_events(50))
 
 
 @app.route("/users")

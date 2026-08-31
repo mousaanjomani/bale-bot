@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}درخواست‌ها | {{ org_name }}{% endblock %}
+{% block content %}
+<h1>درخواست‌ها</h1>
+<div class="panel">
+  <table class="table">
+    <tr><th>#</th><th>پروسه</th><th>درخواست‌کننده</th><th>وضعیت</th><th>نزد</th><th>تاریخ</th><th></th></tr>
+    {% for r in rows %}
+    <tr>
+      <td dir="ltr">#{{ r.req.id }}</td>
+      <td>{{ r.proc.name if r.proc else '—' }}</td>
+      <td>{{ r.requester }}</td>
+      <td>{{ r.status_fa }}{{ ' — ' + r.req.result if r.req.result else '' }}</td>
+      <td>{{ r.assignee or '—' }}</td>
+      <td dir="ltr">{{ r.req.created | dt }}</td>
+      <td><button class="btn" style="margin:0;padding:4px 12px" onclick="var d=document.getElementById('d{{ r.req.id }}');d.style.display=d.style.display==='none'?'':'none'">جزئیات</button></td>
+    </tr>
+    <tr id="d{{ r.req.id }}" style="display:none">
+      <td colspan="7" style="background:#fafbfd">
+        <pre style="white-space:pre-wrap;font-family:inherit;margin:0 0 8px">{{ r.summary }}</pre>
+        <b>تاریخچه:</b>
+        <ul style="margin:6px 18px">
+          {% for l in r.logs %}
+          <li>{{ l.ts | dt }} — {{ l.actor }} — {{ l.action }}{{ ': ' + l.comment if l.comment else '' }}</li>
+          {% endfor %}
+        </ul>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7">درخواستی ثبت نشده است.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

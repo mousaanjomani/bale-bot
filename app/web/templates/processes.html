@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}پروسه‌ها | {{ org_name }}{% endblock %}
+{% block content %}
+<h1>پروسه‌های سازمانی</h1>
+<p class="hint" style="margin-bottom:14px">
+  هر پروسه یک دکمه در بات دارد. درخواست پس از پر شدن فرم، به ترتیبِ مراحل برای مسئول هر مرحله
+  می‌رود؛ مرحله «اجرا» (مثل پرداخت توسط حسابدار خزانه) با انتخاب یکی از گزینه‌ها بسته می‌شود.
+</p>
+
+<form method="post" id="proc-form">
+  <div id="proc-box"></div>
+  <button type="button" class="btn" onclick="addProc()">➕ افزودن پروسه جدید</button>
+  <input type="hidden" name="data" id="data-field">
+  <div><button type="submit" class="btn ok">💾 ذخیره پروسه‌ها</button></div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const procs = {{ processes | tojson }};
+const people = {{ people | tojson }};
+const TYPES = {text: 'متن', number: 'عدد'};
+
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function personOptions(sel) {
+  return people.map(p => `<option value="${esc(p.id)}" ${p.id === sel ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+}
+
+function render() {
+  document.getElementById('proc-box').innerHTML = procs.map((pr, pi) => `
+    <div class="panel">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <label style="margin:0">نام پروسه:</label>
+        <input value="${esc(pr.name)}" style="max-width:200px" onchange="procs[${pi}].name=this.value">
+        <label style="margin:0">متن دکمه در بات:</label>
+        <input value="${esc(pr.button)}" style="max-width:230px" onchange="procs[${pi}].button=this.value">
+        <label style="margin:0"><input type="checkbox" ${pr.active ? 'checked' : ''} style="width:auto" onchange="procs[${pi}].active=this.checked"> فعال</label>
+        <button type="button" class="btn" style="margin:0" onclick="delProc(${pi})">🗑 حذف پروسه</button>
+      </div>
+
+      <h2>فرم درخواست</h2>
+      <table class="table">
+        <tr><th>کلید (لاتین)</th><th>عنوان فیلد</th><th style="width:110px">نوع</th><th style="width:60px"></th></tr>
+        ${pr.form.map((f, fi) => `
+          <tr>
+            <td><input value="${esc(f.key)}" dir="ltr" onchange="procs[${pi}].form[${fi}].key=this.value"></td>
+            <td><input value="${esc(f.label)}" onchange="procs[${pi}].form[${fi}].label=this.value"></td>
+            <td><select onchange="procs[${pi}].form[${fi}].type=this.value">
+              ${Object.entries(TYPES).map(([v, t]) => `<option value="${v}" ${f.type === v ? 'selected' : ''}>${t}</option>`).join('')}
+            </select></td>
+            <td><button type="button" class="btn" style="margin:0;padding:4px 10px" onclick="procs[${pi}].form.splice(${fi},1);render()">🗑</button></td>
+          </tr>`).join('')}
+      </table>
+      <button type="button" class="btn" onclick="procs[${pi}].form.push({key:'field'+Date.now(),label:'فیلد جدید',type:'text'});render()">➕ فیلد</button>
+
+      <h2>مراحل گردش کار (به ترتیب)</h2>
+      <table class="table">
+        <tr><th style="width:24px">#</th><th>عنوان مرحله</th><th>مسئول</th><th>شخص</th><th style="width:60px">اجرا</th><th>گزینه‌های اجرا (با , جدا کنید)</th><th style="width:100px"></th></tr>
+        ${pr.steps.map((s, si) => `
+          <tr>
+            <td>${si + 1}</td>
+            <td><input value="${esc(s.title)}" onchange="procs[${pi}].steps[${si}].title=this.value"></td>
+            <td><select onchange="procs[${pi}].steps[${si}].assignee.type=this.value;render()">
+              <option value="unit_sup" ${s.assignee.type === 'unit_sup' ? 'selected' : ''}>سرپرست واحد درخواست‌کننده</option>
+              <option value="person" ${s.assignee.type === 'person' ? 'selected' : ''}>شخص مشخص</option>
+            </select></td>
+            <td>${s.assignee.type === 'person'
+                ? `<select onchange="procs[${pi}].steps[${si}].assignee.person=this.value">${personOptions(s.assignee.person)}</select>`
+                : '<span class="hint">خودکار از چارت</span>'}</td>
+            <td style="text-align:center"><input type="checkbox" ${s.execute ? 'checked' : ''} style="width:auto" onchange="procs[${pi}].steps[${si}].execute=this.checked;render()"></td>
+            <td>${s.execute
+                ? `<input value="${esc((s.options || []).join('، '))}" onchange="procs[${pi}].steps[${si}].options=this.value.split(/[,،]/).map(x=>x.trim()).filter(Boolean)">`
+                : '<span class="hint">—</span>'}</td>
+            <td>
+              <button type="button" class="btn" style="margin:0;padding:4px 8px" onclick="moveStep(${pi},${si},-1)">⬆️</button>
+              <button type="button" class="btn" style="margin:0;padding:4px 8px" onclick="moveStep(${pi},${si},1)">⬇️</button>
+              <button type="button" class="btn" style="margin:0;padding:4px 8px" onclick="procs[${pi}].steps.splice(${si},1);render()">🗑</button>
+            </td>
+          </tr>`).join('')}
+      </table>
+      <button type="button" class="btn" onclick="procs[${pi}].steps.push({title:'مرحله جدید',assignee:{type:'person',person:(people[0]||{}).id},execute:false,options:[]});render()">➕ مرحله</button>
+    </div>`).join('');
+}
+
+function moveStep(pi, si, d) {
+  const steps = procs[pi].steps, j = si + d;
+  if (j < 0 || j >= steps.length) return;
+  [steps[si], steps[j]] = [steps[j], steps[si]];
+  render();
+}
+function addProc() {
+  procs.push({id: null, name: 'پروسه جدید', button: '🔹 درخواست جدید', active: true,
+    form: [{key: 'desc', label: 'شرح درخواست', type: 'text'}],
+    steps: [{title: 'تأیید سرپرست واحد', assignee: {type: 'unit_sup'}, execute: false, options: []}]});
+  render();
+}
+function delProc(pi) {
+  if (!confirm('این پروسه حذف شود؟ (درخواست‌های قبلی آن در گزارش می‌مانند)')) return;
+  const pr = procs[pi];
+  procs.splice(pi, 1);
+  if (pr.id) {
+    const f = document.getElementById('proc-form');
+    document.getElementById('data-field').value = JSON.stringify({delete: pr.id});
+    f.submit();
+  } else render();
+}
+document.getElementById('proc-form').onsubmit = () => {
+  document.getElementById('data-field').value = JSON.stringify({processes: procs});
+};
+render();
+</script>
+{% endblock %}

@@ -32,6 +32,9 @@ def main() -> None:
 
     store.init_db()
 
+    from app import org
+    org.seed_if_empty()
+
     from app.bot import poller
     poller.start()
     log.info("Bot poller started.")

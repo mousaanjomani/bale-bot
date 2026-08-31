@@ -21,7 +21,9 @@ body {
   width: 230px; background: #17212b; color: #cfd8e3;
   display: flex; flex-direction: column; padding: 16px 0;
 }
-.brand { font-size: 20px; font-weight: 700; padding: 8px 20px 20px; color: #fff; }
+.brand { font-size: 18px; font-weight: 700; padding: 8px 20px 20px; color: #fff; display: flex; align-items: center; gap: 10px; }
+.brand-logo { height: 34px; width: 34px; object-fit: contain; border-radius: 8px; background: #fff; }
+.table-wrap { overflow-x: auto; }
 .sidebar nav { display: flex; flex-direction: column; flex: 1; }
 .sidebar nav a {
   color: #cfd8e3; text-decoration: none; padding: 11px 20px; font-size: 15px;

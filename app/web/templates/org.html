@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}سازمان | {{ org_name }}{% endblock %}
+{% block content %}
+<h1>سازمان و چارت سازمانی</h1>
+
+<form method="post" action="{{ url_for('org_settings') }}" enctype="multipart/form-data" class="panel form">
+  <h2>مشخصات سازمان</h2>
+  <label>نام سازمان</label>
+  <input name="org_name" value="{{ org_name }}">
+  <label>لوگوی سازمان {% if has_logo %}(لوگوی فعلی: <img src="/logo" style="height:26px;vertical-align:middle">) {% endif %}</label>
+  <input type="file" name="logo" accept="image/*">
+  <button type="submit" class="btn ok">💾 ذخیره مشخصات</button>
+</form>
+
+<form method="post" id="org-form" class="panel">
+  <h2>واحدها</h2>
+  <div class="hint" style="margin-bottom:8px">سرپرست هر واحد، تأییدکننده مرحله «سرپرست واحد» در پروسه‌ها است.</div>
+  <div id="units-box"></div>
+  <button type="button" class="btn" onclick="addUnit()">➕ افزودن واحد</button>
+
+  <h2 style="margin-top:24px">پرسنل</h2>
+  <div class="hint" style="margin-bottom:8px">
+    هر پرسنل با ارسال «کد پرسنلی» خود در بات شناسایی و متصل می‌شود؛ اتصال دستی هم از ستون «حساب بله» ممکن است.
+  </div>
+  <div id="people-box"></div>
+  <button type="button" class="btn" onclick="addPerson()">➕ افزودن پرسنل</button>
+
+  <input type="hidden" name="data" id="data-field">
+  <div><button type="submit" class="btn ok">💾 ذخیره چارت سازمانی</button></div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const state = {
+  units: {{ units | tojson }},
+  people: {{ people | tojson }},
+};
+const botUsers = {{ bot_users | tojson }};
+
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function unitOptions(sel) {
+  return '<option value="">—</option>' + state.units.map(u =>
+    `<option value="${esc(u.id)}" ${u.id === sel ? 'selected' : ''}>${esc(u.name)}</option>`).join('');
+}
+function personOptions(sel) {
+  return '<option value="">—</option>' + state.people.map(p =>
+    `<option value="${esc(p.id)}" ${p.id === sel ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+}
+function botUserOptions(sel) {
+  return '<option value="">— متصل نیست —</option>' + botUsers.map(u =>
+    `<option value="${u.chat_id}" ${u.chat_id === sel ? 'selected' : ''}>${esc(u.first_name)} ${esc(u.last_name || '')} (${u.chat_id})</option>`).join('');
+}
+
+function render() {
+  document.getElementById('units-box').innerHTML = `
+    <div class="table-wrap"><table class="table">
+    <tr><th>نام واحد</th><th>واحد بالادست</th><th>سرپرست</th><th>جانشین</th><th style="width:60px"></th></tr>
+    ${state.units.map((u, i) => `
+      <tr>
+        <td><input value="${esc(u.name)}" onchange="state.units[${i}].name=this.value"></td>
+        <td><select onchange="state.units[${i}].parent=this.value||null">${unitOptions(u.parent)}</select></td>
+        <td><select onchange="state.units[${i}].sup=this.value||null">${personOptions(u.sup)}</select></td>
+        <td><select onchange="state.units[${i}].dep=this.value||null">${personOptions(u.dep)}</select></td>
+        <td><button type="button" class="btn" style="margin:0;padding:4px 10px" onclick="delUnit(${i})">🗑</button></td>
+      </tr>`).join('')}
+    </table></div>`;
+
+  document.getElementById('people-box').innerHTML = `
+    <div class="table-wrap"><table class="table">
+    <tr><th>نام</th><th style="width:110px">کد پرسنلی</th><th>واحد</th><th>حساب بله</th><th style="width:60px"></th></tr>
+    ${state.people.map((p, i) => `
+      <tr>
+        <td><input value="${esc(p.name)}" onchange="state.people[${i}].name=this.value"></td>
+        <td><input value="${esc(p.code)}" dir="ltr" onchange="state.people[${i}].code=this.value"></td>
+        <td><select onchange="state.people[${i}].unit=this.value||null">${unitOptions(p.unit)}</select></td>
+        <td><select onchange="state.people[${i}].chat_id=this.value?parseInt(this.value):null">${botUserOptions(p.chat_id)}</select></td>
+        <td><button type="button" class="btn" style="margin:0;padding:4px 10px" onclick="delPerson(${i})">🗑</button></td>
+      </tr>`).join('')}
+    </table></div>`;
+}
+
+function addUnit() { state.units.push({id: 'u' + Date.now(), name: 'واحد جدید', parent: null, sup: null, dep: null}); render(); }
+function delUnit(i) {
+  if (!confirm('این واحد حذف شود؟')) return;
+  const id = state.units[i].id;
+  state.units.splice(i, 1);
+  state.units.forEach(u => { if (u.parent === id) u.parent = null; });
+  state.people.forEach(p => { if (p.unit === id) p.unit = null; });
+  render();
+}
+function addPerson() { state.people.push({id: 'p' + Date.now(), name: '', code: '', unit: null, chat_id: null}); render(); }
+function delPerson(i) {
+  if (!confirm('این پرسنل حذف شود؟')) return;
+  const id = state.people[i].id;
+  state.people.splice(i, 1);
+  state.units.forEach(u => { if (u.sup === id) u.sup = null; if (u.dep === id) u.dep = null; });
+  render();
+}
+document.getElementById('org-form').onsubmit = () => {
+  document.getElementById('data-field').value = JSON.stringify(state);
+};
+render();
+</script>
+{% endblock %}

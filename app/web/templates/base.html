@@ -9,12 +9,18 @@
 <body>
 <div class="layout">
   <aside class="sidebar">
-    <div class="brand">🤖 بات بله</div>
+    <div class="brand">
+      {% if has_logo %}<img src="/logo" class="brand-logo" alt="">{% endif %}
+      <span>{{ org_name or 'بات بله' }}</span>
+    </div>
     <nav>
       <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/' }}">🏠 داشبورد</a>
+      <a href="{{ url_for('org_page') }}" class="{{ 'active' if request.path == '/org' }}">🏢 سازمان</a>
+      <a href="{{ url_for('processes_page') }}" class="{{ 'active' if request.path == '/processes' }}">🔁 پروسه‌ها</a>
+      <a href="{{ url_for('requests_page') }}" class="{{ 'active' if request.path == '/requests' }}">🗂 درخواست‌ها</a>
       <a href="{{ url_for('users') }}" class="{{ 'active' if request.path == '/users' }}">👥 کاربران</a>
       <a href="{{ url_for('messages') }}" class="{{ 'active' if request.path == '/messages' }}">💬 پیام‌ها</a>
-      <a href="{{ url_for('menu_editor') }}" class="{{ 'active' if request.path == '/menu' }}">🔘 منوی بات</a>
+      <a href="{{ url_for('menu_editor') }}" class="{{ 'active' if request.path == '/menu' }}">🔘 دکمه‌های سفارشی</a>
       <a href="{{ url_for('broadcast') }}" class="{{ 'active' if request.path == '/broadcast' }}">📣 ارسال اعلان</a>
       <a href="{{ url_for('settings') }}" class="{{ 'active' if request.path == '/settings' }}">⚙️ تنظیمات</a>
       <a href="{{ url_for('logs') }}" class="{{ 'active' if request.path == '/logs' }}">📜 لاگ‌ها</a>
