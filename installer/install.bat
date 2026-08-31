@@ -26,5 +26,16 @@ if %errorlevel% neq 0 (
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%TEMP%\balebot-install.ps1"
+if %errorlevel% neq 0 (
+    echo.
+    echo Installation did not finish successfully.
+    pause
+    exit /b 1
+)
+
+rem ---- open the dashboard in the browser (Chrome, or default browser) ----
+echo Opening the dashboard...
+timeout /t 3 /nobreak >nul
+start chrome http://localhost:8585 2>nul || start "" http://localhost:8585
 echo.
 pause
