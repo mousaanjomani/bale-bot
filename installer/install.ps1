@@ -1,7 +1,7 @@
 ﻿# =====================================================================
 #  Bale Bot - Windows installer
 #  Run on the customer server (PowerShell as Administrator):
-#    irm https://raw.githubusercontent.com/<OWNER>/<REPO>/main/installer/install.ps1 | iex
+#    irm https://raw.githubusercontent.com/mousaanjomani/bale-bot/main/installer/install.ps1 -OutFile $env:TEMP\balebot-install.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\balebot-install.ps1
 #  or download this file and run:  powershell -ExecutionPolicy Bypass -File install.ps1
 # =====================================================================
 $ErrorActionPreference = "Stop"

@@ -24,9 +24,10 @@ C:\BaleBot\
 PowerShell را **به عنوان Administrator** باز کنید و اجرا کنید:
 
 ```powershell
-irm https://raw.githubusercontent.com/mousaanjomani/bale-bot/main/installer/install.ps1 | iex
+irm https://raw.githubusercontent.com/mousaanjomani/bale-bot/main/installer/install.ps1 -OutFile $env:TEMP\balebot-install.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\balebot-install.ps1
 ```
 
+نصاب مسیر نصب را می‌پرسد (Enter = `C:\BaleBot`).
 پس از نصب: داشبورد روی `http://<server-ip>:8585` (کاربر `admin`).
 
 ## انتشار نسخه جدید (روی سیستم توسعه)
